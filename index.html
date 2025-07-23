@@ -3,97 +3,73 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Technician App</title>
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
-  <script src="https://unpkg.com/@zxing/library@latest"></script>
+  <title>Repair Report with Camera OCR</title>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.1/dist/tesseract.min.js"></script>
   <style>
-    body { font-family: sans-serif; padding: 20px; }
-    button { padding: 10px 15px; margin: 5px; }
-    .hidden { display: none; }
-    textarea { width: 100%; height: 100px; }
-    input, select { width: 100%; margin-bottom: 10px; padding: 8px; }
-    .section { margin-top: 20px; }
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 900px; margin: auto; }
+    input, textarea, select, button { width: 100%; padding: 10px; margin: 10px 0; }
+    img { max-width: 100%; margin-top: 10px; }
+    .ocr-preview { margin-top: 20px; font-family: monospace; background: #f4f4f4; padding: 10px; white-space: pre-wrap; }
+    .section { margin-top: 30px; border-top: 1px solid #ccc; padding-top: 20px; }
   </style>
 </head>
 <body>
-  <h2>Technician Mobile App</h2>
-  <button onclick="showSection('repair')">📷 New Repair Report</button>
-  <button onclick="showSection('sop')">📖 SOP Library</button>
+  <h1>Repair Report (OCR + Camera Capture)</h1>
 
-  <div id="repair" class="section" style="display:none;">
-    <h3>Repair Report</h3>
-    <label>Container Number: <input type="text" /></label>
-    <label>Model Number (Auto): <input id="modelInput" type="text" /></label>
-    <label>Serial Number (Auto): <input id="serialInput" type="text" /></label>
-    <label>Date: <input type="date" /></label>
-    <label>Technician Name: <input type="text" /></label>
-    <label>Upload Info Plate Image for OCR: <input type="file" accept="image/*" onchange="runOCR(event)" /></label>
-    <label>Scan Barcode (Model Number):</label>
-    <video id="barcode-video" width="300" height="200" style="border:1px solid gray;"></video>
-    <button onclick="startBarcodeScan()">Start Barcode Scan</button>
-    <label>Supply Temp Before/After: <input type="text" /></label>
-    <label>Return Temp Before/After: <input type="text" /></label>
-    <label>Description: <textarea></textarea></label>
-    <button>Submit (to Excel backend)</button>
+  <div class="section">
+    <h2>📸 Capture Info Plate (OCR1)</h2>
+    <input type="file" accept="image/*" capture="environment" id="ocr1-upload" />
+    <button onclick="runOCR1()">Run OCR</button>
+    <img id="preview1" />
+    <div id="ocr1-output" class="ocr-preview"></div>
   </div>
 
-  <div id="sop" class="section" style="display:none;">
-    <h3>SOP Viewer</h3>
-    <select onchange="loadSOP(this.value)">
-      <option value="">-- Select SOP --</option>
-      <option value="monitoring">Monitoring</option>
-      <option value="connection">Connection</option>
-      <option value="disconnection">Disconnection</option>
-      <option value="log_in">Log In</option>
-      <option value="log_off">Log Off</option>
-      <option value="problems">Common Problems</option>
-    </select>
-    <div id="sop-content" style="margin-top:15px;"></div>
+  <div class="section">
+    <h2>Auto-filled Fields</h2>
+    <label>Model Number</label>
+    <input type="text" id="model">
+    <label>Serial Number</label>
+    <input type="text" id="serial">
+    <label>Date of Manufacture</label>
+    <input type="text" id="manufacture">
+    <label>Warranty ID</label>
+    <input type="text" id="warranty">
+    <label>Refrigerant Type</label>
+    <input type="text" id="refrigerant">
+    <label>Date in Service</label>
+    <input type="text" id="service">
   </div>
 
   <script>
-    function showSection(id) {
-      document.getElementById("repair").style.display = "none";
-      document.getElementById("sop").style.display = "none";
-      document.getElementById(id).style.display = "block";
-    }
+    function runOCR1() {
+      const fileInput = document.getElementById("ocr1-upload");
+      const preview = document.getElementById("preview1");
+      const output = document.getElementById("ocr1-output");
 
-    function runOCR(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      Tesseract.recognize(file, 'eng').then(({ data: { text } }) => {
-        const modelMatch = text.match(/Model Number[:\s]*([\w-]+)/i);
-        const serialMatch = text.match(/Serial Number[:\s]*([\w-]+)/i);
-        if (modelMatch) document.getElementById("modelInput").value = modelMatch[1];
-        if (serialMatch) document.getElementById("serialInput").value = serialMatch[1];
-        alert("OCR complete.");
-      });
-    }
+      if (!fileInput.files[0]) {
+        alert("Please take or select a photo.");
+        return;
+      }
 
-    function startBarcodeScan() {
-      const codeReader = new ZXing.BrowserBarcodeReader();
-      codeReader.decodeFromVideoDevice(null, 'barcode-video', (result, err) => {
-        if (result) {
-          document.getElementById("modelInput").value = result.text;
-          codeReader.reset();
-          alert("Barcode scanned: " + result.text);
-        }
-      });
-    }
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        preview.src = e.target.result;
+        Tesseract.recognize(
+          e.target.result,
+          'eng',
+          { logger: m => output.textContent = "⏳ " + m.status + " " + (m.progress * 100).toFixed(0) + "%" }
+        ).then(({ data: { text } }) => {
+          output.textContent = text;
 
-    const SOP_DATA = {
-      monitoring: "Check temperatures, power status, alarms and visual indicators every 4 hours...",
-      connection: "Ensure the power plug is secure, switch on P-Dat, confirm green LED, and wait for status screen...",
-      disconnection: "Log off from P-Dat, shut down unit properly, then unplug from power source safely...",
-      log_in: "From P-Dat, select 'Log In', scan your ID, verify unit serial and temperature settings...",
-      log_off: "Select 'Log Off' on P-Dat, confirm unit is stable, and note container ID before disconnection...",
-      problems: "If P-Dat does not power on, check cable, try alternate socket, and inspect unit fuse..."
-    };
-
-    function loadSOP(key) {
-      const content = SOP_DATA[key] || "";
-      document.getElementById("sop-content").innerText = content;
+          document.getElementById("model").value = (text.match(/Model Number[:\s]*([\w\-\/]+)/i) || [])[1] || "";
+          document.getElementById("serial").value = (text.match(/Serial Number[:\s]*([\w\-\/]+)/i) || [])[1] || "";
+          document.getElementById("manufacture").value = (text.match(/Date of Manufacture[:\s]*([\w\-\/]+)/i) || [])[1] || "";
+          document.getElementById("warranty").value = (text.match(/Warranty ID Number[:\s]*([\d]+)/i) || [])[1] || "";
+          document.getElementById("refrigerant").value = (text.match(/Refrigerant[:\s]*([A-Z0-9\-]+)/i) || [])[1] || "";
+          document.getElementById("service").value = (text.match(/Date In Service[:\s]*([\w\-\/]+)/i) || [])[1] || "";
+        });
+      };
+      reader.readAsDataURL(fileInput.files[0]);
     }
   </script>
 </body>
