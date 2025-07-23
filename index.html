@@ -2,75 +2,145 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Repair Report with Camera OCR</title>
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.1/dist/tesseract.min.js"></script>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; max-width: 900px; margin: auto; }
-    input, textarea, select, button { width: 100%; padding: 10px; margin: 10px 0; }
-    img { max-width: 100%; margin-top: 10px; }
-    .ocr-preview { margin-top: 20px; font-family: monospace; background: #f4f4f4; padding: 10px; white-space: pre-wrap; }
-    .section { margin-top: 30px; border-top: 1px solid #ccc; padding-top: 20px; }
-  </style>
+    <meta charset="UTF-8">
+    <title>Technician Repair Report</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2/dist/tesseract.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; max-width: 1000px; margin: auto; }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input, textarea, select { width: 100%; padding: 6px; margin-top: 5px; }
+        .section { margin-top: 30px; border-top: 1px solid #ccc; padding-top: 20px; }
+    </style>
 </head>
 <body>
-  <h1>Repair Report (OCR + Camera Capture)</h1>
+    <h1>Technician Repair Report</h1>
 
-  <div class="section">
-    <h2>📸 Capture Info Plate (OCR1)</h2>
-    <input type="file" accept="image/*" capture="environment" id="ocr1-upload" />
-    <button onclick="runOCR1()">Run OCR</button>
-    <img id="preview1" />
-    <div id="ocr1-output" class="ocr-preview"></div>
-  </div>
+    <div class="section">
+        <h2>Upload Image for OCR1 (Info Plate)</h2>
+        <input type="file" id="ocr1-upload" accept="image/*">
+        <button type="button" onclick="runOCR1()">Extract Info from Plate</button>
+        <pre id="ocr1-status"></pre>
+    </div>
 
-  <div class="section">
-    <h2>Auto-filled Fields</h2>
-    <label>Model Number</label>
-    <input type="text" id="model">
-    <label>Serial Number</label>
-    <input type="text" id="serial">
-    <label>Date of Manufacture</label>
-    <input type="text" id="manufacture">
-    <label>Warranty ID</label>
-    <input type="text" id="warranty">
-    <label>Refrigerant Type</label>
-    <input type="text" id="refrigerant">
-    <label>Date in Service</label>
-    <input type="text" id="service">
-  </div>
+    <div class="section">
+        <h2>Upload Image for OCR2 (Part Labels)</h2>
+        <input type="file" id="ocr2-upload" accept="image/*">
+        <button type="button" onclick="runOCR2()">Extract Info from Part</button>
+        <pre id="ocr2-status"></pre>
+    </div>
 
-  <script>
-    function runOCR1() {
-      const fileInput = document.getElementById("ocr1-upload");
-      const preview = document.getElementById("preview1");
-      const output = document.getElementById("ocr1-output");
+    <div class="section">
+        <h2>General Information</h2>
+        <label>CONTAINERNR</label>
+        <input type="text">
+        <label>DATUM</label>
+        <input type="date">
+        <label>NAAM (Technician Name)</label>
+        <input type="text" placeholder="Auto-filled if logged in">
+    </div>
 
-      if (!fileInput.files[0]) {
-        alert("Please take or select a photo.");
-        return;
-      }
+    <div class="section">
+        <h2>Temperature and Environment</h2>
+        <label>SETPOINT °C</label>
+        <input type="number">
+        <label>VENTS</label>
+        <input type="text">
+        <label>CMH</label>
+        <input type="text">
+        <label>HUM</label>
+        <input type="text">
+        <label>AMBIENT</label>
+        <input type="text">
+        <label>SUPPLY (VOOR/NA)</label>
+        <input type="number">
+        <label>RETURN (VOOR/NA)</label>
+        <input type="number">
+    </div>
 
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        preview.src = e.target.result;
-        Tesseract.recognize(
-          e.target.result,
-          'eng',
-          { logger: m => output.textContent = "⏳ " + m.status + " " + (m.progress * 100).toFixed(0) + "%" }
-        ).then(({ data: { text } }) => {
-          output.textContent = text;
+    <div class="section">
+        <h2>Unit Identification (from OCR1)</h2>
+        <label>MODEL</label>
+        <input type="text" id="model_input">
+        <label>DATUM IN DIENST</label>
+        <input type="text" id="date_input">
+        <label>SERIENR.</label>
+        <input type="text" id="serial_input">
+        <label>WARRANTY ID NR</label>
+        <input type="text" id="warranty_id_input">
+        <label>WARRANTY TAG NR</label>
+        <input type="text" id="warranty_tag_input">
+        <label>DATUM IN SERVICE</label>
+        <input type="text" id="install_date_input">
+        <label>GARANTIE</label>
+        <input type="text">
+        <label>AANTAL MAANDEN GARANTIE</label>
+        <input type="text">
+        <label>UNIT RUN TIME</label>
+        <input type="text">
+        <label>COMPRESSOR MOTOR HOURS</label>
+        <input type="text">
+    </div>
 
-          document.getElementById("model").value = (text.match(/Model Number[:\s]*([\w\-\/]+)/i) || [])[1] || "";
-          document.getElementById("serial").value = (text.match(/Serial Number[:\s]*([\w\-\/]+)/i) || [])[1] || "";
-          document.getElementById("manufacture").value = (text.match(/Date of Manufacture[:\s]*([\w\-\/]+)/i) || [])[1] || "";
-          document.getElementById("warranty").value = (text.match(/Warranty ID Number[:\s]*([\d]+)/i) || [])[1] || "";
-          document.getElementById("refrigerant").value = (text.match(/Refrigerant[:\s]*([A-Z0-9\-]+)/i) || [])[1] || "";
-          document.getElementById("service").value = (text.match(/Date In Service[:\s]*([\w\-\/]+)/i) || [])[1] || "";
-        });
-      };
-      reader.readAsDataURL(fileInput.files[0]);
-    }
-  </script>
+    <div class="section">
+        <h2>Parts Replaced (from OCR2)</h2>
+        <label>PARTNR.</label>
+        <select>
+            <option value="">Select Part Number</option>
+        </select>
+        <label>OMSCHRIJVING ONDERDEEL</label>
+        <input type="text">
+        <label>AANTAL</label>
+        <input type="number">
+        <label>SERIENR. DEFECT</label>
+        <input type="text" id="defect_serial_input">
+        <label>SERIENR. NIEUW</label>
+        <input type="text" id="new_serial_input">
+    </div>
+
+    <div class="section">
+        <h2>Additional Notes</h2>
+        <label>ALARM(en)</label>
+        <input type="text">
+        <label>TEMPERATUUR IN-RANGE NA REPAIR</label>
+        <input type="text">
+        <label>OMSCHRIJVING / PROBLEEM / OPMERKINGEN</label>
+        <textarea rows="5"></textarea>
+    </div>
+
+    <script>
+        function runOCR1() {
+            const file = document.getElementById('ocr1-upload').files[0];
+            const status = document.getElementById('ocr1-status');
+            if (!file) return alert("Upload an image first.");
+
+            status.textContent = "Processing OCR1...";
+            Tesseract.recognize(file, 'eng')
+            .then(({ data: { text } }) => {
+                status.textContent = text;
+                document.getElementById('model_input').value = text.match(/Model Number:\s*([A-Z0-9\-]+)/i)?.[1] || '';
+                document.getElementById('serial_input').value = text.match(/Serial Number:\s*([A-Z0-9]+)/i)?.[1] || '';
+                document.getElementById('date_input').value = text.match(/Date of Manufacture:\s*([0-9\/]+)/i)?.[1] || '';
+                document.getElementById('warranty_id_input').value = text.match(/Warranty.?ID.?Number.?[:\s]+(\d{7})/i)?.[1] || '';
+                document.getElementById('warranty_tag_input').value = text.match(/Warranty Tag.?Number.?[:\s]+([A-Z0-9]+)/i)?.[1] || '';
+                document.getElementById('install_date_input').value = text.match(/Date in Service:\s*([0-9\/]+)/i)?.[1] || '';
+            })
+            .catch(err => status.textContent = 'OCR1 failed: ' + err);
+        }
+
+        function runOCR2() {
+            const file = document.getElementById('ocr2-upload').files[0];
+            const status = document.getElementById('ocr2-status');
+            if (!file) return alert("Upload a part photo first.");
+
+            status.textContent = "Processing OCR2...";
+            Tesseract.recognize(file, 'eng')
+            .then(({ data: { text } }) => {
+                status.textContent = text;
+                document.getElementById('defect_serial_input').value = text.match(/Defect Serial[:\s]*([A-Z0-9]+)/i)?.[1] || '';
+                document.getElementById('new_serial_input').value = text.match(/New Serial[:\s]*([A-Z0-9]+)/i)?.[1] || '';
+            })
+            .catch(err => status.textContent = 'OCR2 failed: ' + err);
+        }
+    </script>
 </body>
 </html>
