@@ -1,0 +1,67 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Repair Report with OCR Autofill</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; }
+    label { display: block; margin-top: 10px; }
+    input, select { width: 300px; padding: 6px; margin-top: 4px; }
+    #ocrImage { margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Repair Report Form</h1>
+
+  <label for="ocrImage">Upload Info Plate Image:</label>
+  <input type="file" id="ocrImage" accept="image/*">
+
+  <form id="repairForm">
+    <label>Serial Number:
+      <input type="text" id="serial_number_input" name="serial_number">
+    </label>
+    <label>Warranty ID:
+      <input type="text" id="warranty_id_input" name="warranty_id">
+    </label>
+    <label>Date of Manufacture:
+      <input type="text" id="manufacture_date_input" name="manufacture_date">
+    </label>
+    <label>Basic Unit Warranty (months):
+      <input type="text" id="basic_unit_input" name="basic_unit">
+    </label>
+    <label>Fan Motors Warranty (months):
+      <input type="text" id="fan_motors_input" name="fan_motors">
+    </label>
+    <label>Compressor Warranty (months):
+      <input type="text" id="compressor_input" name="compressor">
+    </label>
+  </form>
+
+  <script>
+    document.getElementById('ocrImage').addEventListener('change', async function (e) {
+      const response = await fetch('ocr_autofill_data.json');
+      const data = await response.json();
+
+      if (data.serial_number) {
+        document.getElementById('serial_number_input').value = data.serial_number;
+      }
+      if (data.warranty_id) {
+        document.getElementById('warranty_id_input').value = data.warranty_id;
+      }
+      if (data.manufacture_date) {
+        document.getElementById('manufacture_date_input').value = data.manufacture_date;
+      }
+      if (data.basic_unit) {
+        document.getElementById('basic_unit_input').value = data.basic_unit;
+      }
+      if (data.fan_motors) {
+        document.getElementById('fan_motors_input').value = data.fan_motors;
+      }
+      if (data.compressor) {
+        document.getElementById('compressor_input').value = data.compressor;
+      }
+    });
+  </script>
+</body>
+</html>
