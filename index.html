@@ -1,146 +1,68 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Technician Repair Report</title>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2/dist/tesseract.min.js"></script>
+    <title>Technician Repair Report (OCR Enhanced)</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.5/dist/tesseract.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; max-width: 1000px; margin: auto; }
-        label { display: block; margin-top: 10px; font-weight: bold; }
-        input, textarea, select { width: 100%; padding: 6px; margin-top: 5px; }
-        .section { margin-top: 30px; border-top: 1px solid #ccc; padding-top: 20px; }
+        body {{ font-family: Arial; max-width: 800px; margin: auto; padding: 20px; }}
+        label {{ font-weight: bold; display: block; margin-top: 10px; }}
+        input, textarea {{ width: 100%; padding: 6px; margin-top: 5px; }}
+        .section {{ border-top: 1px solid #ccc; padding-top: 20px; margin-top: 20px; }}
     </style>
 </head>
 <body>
     <h1>Technician Repair Report</h1>
-
     <div class="section">
-        <h2>Upload Image for OCR1 (Info Plate)</h2>
-        <input type="file" id="ocr1-upload" accept="image/*">
-        <button type="button" onclick="runOCR1()">Extract Info from Plate</button>
-        <pre id="ocr1-status"></pre>
+        <label for="model">Model Number</label>
+        <input type="text" id="model" placeholder="Model Number">
+
+        <label for="serial">Serial Number</label>
+        <input type="text" id="serial" placeholder="Serial Number">
+
+        <label for="parts_id">Parts ID Number</label>
+        <input type="text" id="parts_id" placeholder="Parts ID">
+
+        <label for="warranty_id">Warranty ID</label>
+        <input type="text" id="warranty_id" placeholder="Warranty ID">
+
+        <label for="date_manufacture">Date of Manufacture</label>
+        <input type="text" id="date_manufacture" placeholder="Date of Manufacture">
     </div>
 
     <div class="section">
-        <h2>Upload Image for OCR2 (Part Labels)</h2>
-        <input type="file" id="ocr2-upload" accept="image/*">
-        <button type="button" onclick="runOCR2()">Extract Info from Part</button>
-        <pre id="ocr2-status"></pre>
-    </div>
-
-    <div class="section">
-        <h2>General Information</h2>
-        <label>CONTAINERNR</label>
-        <input type="text">
-        <label>DATUM</label>
-        <input type="date">
-        <label>NAAM (Technician Name)</label>
-        <input type="text" placeholder="Auto-filled if logged in">
-    </div>
-
-    <div class="section">
-        <h2>Temperature and Environment</h2>
-        <label>SETPOINT °C</label>
-        <input type="number">
-        <label>VENTS</label>
-        <input type="text">
-        <label>CMH</label>
-        <input type="text">
-        <label>HUM</label>
-        <input type="text">
-        <label>AMBIENT</label>
-        <input type="text">
-        <label>SUPPLY (VOOR/NA)</label>
-        <input type="number">
-        <label>RETURN (VOOR/NA)</label>
-        <input type="number">
-    </div>
-
-    <div class="section">
-        <h2>Unit Identification (from OCR1)</h2>
-        <label>MODEL</label>
-        <input type="text" id="model_input">
-        <label>DATUM IN DIENST</label>
-        <input type="text" id="date_input">
-        <label>SERIENR.</label>
-        <input type="text" id="serial_input">
-        <label>WARRANTY ID NR</label>
-        <input type="text" id="warranty_id_input">
-        <label>WARRANTY TAG NR</label>
-        <input type="text" id="warranty_tag_input">
-        <label>DATUM IN SERVICE</label>
-        <input type="text" id="install_date_input">
-        <label>GARANTIE</label>
-        <input type="text">
-        <label>AANTAL MAANDEN GARANTIE</label>
-        <input type="text">
-        <label>UNIT RUN TIME</label>
-        <input type="text">
-        <label>COMPRESSOR MOTOR HOURS</label>
-        <input type="text">
-    </div>
-
-    <div class="section">
-        <h2>Parts Replaced (from OCR2)</h2>
-        <label>PARTNR.</label>
-        <select>
-            <option value="">Select Part Number</option>
-        </select>
-        <label>OMSCHRIJVING ONDERDEEL</label>
-        <input type="text">
-        <label>AANTAL</label>
-        <input type="number">
-        <label>SERIENR. DEFECT</label>
-        <input type="text" id="defect_serial_input">
-        <label>SERIENR. NIEUW</label>
-        <input type="text" id="new_serial_input">
-    </div>
-
-    <div class="section">
-        <h2>Additional Notes</h2>
-        <label>ALARM(en)</label>
-        <input type="text">
-        <label>TEMPERATUUR IN-RANGE NA REPAIR</label>
-        <input type="text">
-        <label>OMSCHRIJVING / PROBLEEM / OPMERKINGEN</label>
-        <textarea rows="5"></textarea>
+        <label for="plate_image">Upload Image for OCR</label>
+        <input type="file" id="plate_image" accept="image/*">
+        <button onclick="runOCR()">Extract Info from Plate</button>
+        <pre id="ocr_output"></pre>
     </div>
 
     <script>
-        function runOCR1() {
-            const file = document.getElementById('ocr1-upload').files[0];
-            const status = document.getElementById('ocr1-status');
-            if (!file) return alert("Upload an image first.");
+        function runOCR() {{
+            const image = document.getElementById("plate_image").files[0];
+            if (!image) {{
+                alert("Please upload an image.");
+                return;
+            }}
+            Tesseract.recognize(image, 'eng').then(function(result) {{
+                const text = result.data.text;
+                document.getElementById("ocr_output").textContent = text;
 
-            status.textContent = "Processing OCR1...";
-            Tesseract.recognize(file, 'eng')
-            .then(({ data: { text } }) => {
-                status.textContent = text;
-                document.getElementById('model_input').value = text.match(/Model Number:\s*([A-Z0-9\-]+)/i)?.[1] || '';
-                document.getElementById('serial_input').value = text.match(/Serial Number:\s*([A-Z0-9]+)/i)?.[1] || '';
-                document.getElementById('date_input').value = text.match(/Date of Manufacture:\s*([0-9\/]+)/i)?.[1] || '';
-                document.getElementById('warranty_id_input').value = text.match(/Warranty.?ID.?Number.?[:\s]+(\d{7})/i)?.[1] || '';
-                document.getElementById('warranty_tag_input').value = text.match(/Warranty Tag.?Number.?[:\s]+([A-Z0-9]+)/i)?.[1] || '';
-                document.getElementById('install_date_input').value = text.match(/Date in Service:\s*([0-9\/]+)/i)?.[1] || '';
-            })
-            .catch(err => status.textContent = 'OCR1 failed: ' + err);
-        }
+                const modelMatch = text.match(/Model\s*Number[:\-\s]*([A-Z0-9\-]+)/i);
+                const serialMatch = text.match(/Serial\s*Number[:\-\s]*([A-Z0-9]+)/i) || text.match(/S\.?N\.?[:\-\s]*([A-Z0-9]+)/i);
+                const partsIdMatch = text.match(/Parts\s*ID\s*Number[:\-\s]*([A-Z0-9]+)/i);
+                const warrantyMatch = text.match(/Warranty.*?ID.*?[:\-\s]*([A-Z0-9]+)/i);
+                const dateMatch = text.match(/Date\s*(?:of)?\s*Manufacture[:\-\s]*([0-9\/\.\-]+)/i);
 
-        function runOCR2() {
-            const file = document.getElementById('ocr2-upload').files[0];
-            const status = document.getElementById('ocr2-status');
-            if (!file) return alert("Upload a part photo first.");
-
-            status.textContent = "Processing OCR2...";
-            Tesseract.recognize(file, 'eng')
-            .then(({ data: { text } }) => {
-                status.textContent = text;
-                document.getElementById('defect_serial_input').value = text.match(/Defect Serial[:\s]*([A-Z0-9]+)/i)?.[1] || '';
-                document.getElementById('new_serial_input').value = text.match(/New Serial[:\s]*([A-Z0-9]+)/i)?.[1] || '';
-            })
-            .catch(err => status.textContent = 'OCR2 failed: ' + err);
-        }
+                if (modelMatch) document.getElementById("model").value = modelMatch[1];
+                if (serialMatch) document.getElementById("serial").value = serialMatch[1];
+                if (partsIdMatch) document.getElementById("parts_id").value = partsIdMatch[1];
+                if (warrantyMatch) document.getElementById("warranty_id").value = warrantyMatch[1];
+                if (dateMatch) document.getElementById("date_manufacture").value = dateMatch[1];
+            }});
+        }}
     </script>
 </body>
 </html>
