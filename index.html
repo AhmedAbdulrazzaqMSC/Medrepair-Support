@@ -3,81 +3,84 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Technician Report with OCR</title>
+  <title>Technician Repair Report</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2/dist/tesseract.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 900px; margin: auto; }
+    input, select, textarea { width: 100%; margin-bottom: 10px; padding: 8px; }
+    h2 { background: #f0f0f0; padding: 10px; }
+  </style>
 </head>
 <body>
-  <h2>Repair Report</h2>
 
-  <form>
-    <p><label>Container Number:<br>
-      <input type="text" id="container_number" name="container_number">
-    </label></p>
+  <h2>1. General Information</h2>
+  <input placeholder="CONTAINERNR" type="text">
+  <input placeholder="DATUM" type="date">
+  <input placeholder="NAAM (auto)" type="text" readonly value="Logged-in User">
 
-    <p><label>Model Number (Auto):<br>
-      <input type="text" id="model_input" name="model_input" placeholder="Model Number">
-    </label></p>
+  <h2>2. Reefer Measurements</h2>
+  <input placeholder="SETPOINT °C" type="number">
+  <input placeholder="VENTS" type="text">
+  <input placeholder="CMH" type="text">
+  <input placeholder="HUM" type="text">
+  <input placeholder="AMBIENT" type="text">
+  <input placeholder="SUPPLY VOOR REPAIR" type="text">
+  <input placeholder="SUPPLY NA REPAIR" type="text">
+  <input placeholder="RETURN VOOR REPAIR" type="text">
+  <input placeholder="RETURN NA REPAIR" type="text">
 
-    <p><label>Serial Number (Auto):<br>
-      <input type="text" id="serial_input" name="serial_input" placeholder="Serial Number">
-    </label></p>
+  <h2>3. Unit Info (OCR from Info Plate)</h2>
+  <input id="model_input" placeholder="MODEL" type="text">
+  <input id="service_date_input" placeholder="DATUM IN DIENST" type="text">
+  <input id="serial_input" placeholder="SERIENR." type="text">
+  <input id="warranty_id_input" placeholder="WARRANTY ID NR" type="text">
+  <input id="warranty_tag_input" placeholder="WARRANTY TAG NR" type="text">
+  <input id="install_date_input" placeholder="DATUM IN SERVICE" type="text">
+  <input id="warranty_text_input" placeholder="GARANTIE" type="text" readonly>
+  <input id="warranty_months_input" placeholder="AANTAL MAANDEN GARANTIE" type="text" readonly>
+  <input placeholder="UNIT RUN TIME" type="text">
+  <input placeholder="COMPRESSOR MOTOR HOURS" type="text">
 
-    <p><label>Date:<br>
-      <input type="date" id="date_input" name="date_input">
-    </label></p>
+  <p><label>Upload Info Plate Image for OCR:
+    <input type="file" id="ocr1-upload" accept="image/*">
+  </label>
+  <button type="button" id="extract-ocr1">Extract Info Plate Data</button></p>
+  <div id="ocr1-status"></div>
 
-    <p><label>Technician Name:<br>
-      <input type="text" id="tech_name" name="tech_name">
-    </label></p>
+  <h2>4. Alarms & Comments</h2>
+  <input placeholder="ALARM(en)" type="text">
+  <input placeholder="TEMPERATUUR IN-RANGE NA REPAIR" type="text">
+  <textarea placeholder="OMSCHRIJVING / PROBLEEM" rows="3"></textarea>
+  <textarea placeholder="OPMERKINGEN" rows="3"></textarea>
 
-    <p><label>Upload Info Plate Image for OCR:<br>
-      <input type="file" id="plate-upload" accept="image/*">
-    </label>
-    <button type="button" id="extract-btn">Extract Info</button></p>
-
-    <p><label>Refrigerant Type:<br>
-      <input type="text" id="refrigerant_input" name="refrigerant_input" placeholder="Refrigerant Type">
-    </label></p>
-
-    <p><label>Warranty ID:<br>
-      <input type="text" id="warranty_input" name="warranty_input" placeholder="Warranty ID">
-    </label></p>
-
-    <div id="ocr-status" style="margin-top:10px;"></div>
-  </form>
+  <h2>5. Spare Parts (OCR from Part Photos)</h2>
+  <select><option disabled selected>PARTNR.</option><option>Preloaded Part 1</option><option>Preloaded Part 2</option></select>
+  <input placeholder="OMSCHRIJVING ONDERDEEL" type="text">
+  <input placeholder="AANTAL" type="number">
+  <input placeholder="SERIENR. DEFECT ONDERDEEL" type="text">
+  <input placeholder="SERIENR. NIEUW ONDERDEEL" type="text">
 
   <script>
-    document.getElementById('extract-btn').addEventListener('click', () => {
-      const fileInput = document.getElementById('plate-upload');
-      const file = fileInput.files[0];
-      if (!file) return alert('Select an image first.');
+    document.getElementById('extract-ocr1').addEventListener('click', () => {
+      const file = document.getElementById('ocr1-upload').files[0];
+      if (!file) return alert("Select an image first.");
+      const status = document.getElementById('ocr1-status');
+      status.innerText = 'Extracting...';
 
-      const status = document.getElementById('ocr-status');
-      status.innerText = 'Extracting info…';
-
-      Tesseract.recognize(file, 'eng')
-        .then(({ data: { text } }) => {
-          status.innerText = 'OCR Raw Output:\n' + text;
-
-          const fields = {
-            model: text.match(/Model Number:\s*([A-Z0-9\-]+)/i)?.[1] || '',
-            serial: text.match(/Serial Number:\s*([A-Z0-9]+)/i)?.[1] || '',
-            date: text.match(/Date of Manufacture:\s*([0-9\/]+)/i)?.[1] || '',
-            refrigerant: text.match(/R-134A|R-404A|R-452A/i)?.[0] || '',
-            warranty: text.match(/Warranty.?ID.?Number.?[:\s]+(\d{7})/i)?.[1] || ''
-          };
-
-          document.getElementById('model_input').value = fields.model;
-          document.getElementById('serial_input').value = fields.serial;
-          document.getElementById('date_input').value = fields.date;
-          document.getElementById('refrigerant_input').value = fields.refrigerant;
-          document.getElementById('warranty_input').value = fields.warranty;
-        })
-        .catch(err => {
-          console.error(err);
-          status.innerText = 'OCR error. Check console.';
-        });
+      Tesseract.recognize(file, 'eng').then(({ data: { text } }) => {
+        document.getElementById('model_input').value = text.match(/Model Number:\s*([A-Z0-9\-]+)/i)?.[1] || '';
+        document.getElementById('serial_input').value = text.match(/Serial Number:\s*([A-Z0-9]+)/i)?.[1] || '';
+        document.getElementById('service_date_input').value = text.match(/Date of Manufacture:\s*([0-9\/]+)/i)?.[1] || '';
+        document.getElementById('install_date_input').value = text.match(/Date in Service:\s*([0-9\/]+)/i)?.[1] || '';
+        document.getElementById('warranty_id_input').value = text.match(/Warranty.?ID.?Number.?[:\s]+(\d{7})/i)?.[1] || '';
+        document.getElementById('warranty_tag_input').value = text.match(/Warranty Tag.?Number.?[:\s]+([A-Z0-9]+)/i)?.[1] || '';
+        status.innerText = 'Done';
+      }).catch(err => {
+        status.innerText = 'OCR failed';
+        console.error(err);
+      });
     });
   </script>
+
 </body>
 </html>
