@@ -1,0 +1,67 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Technician Repair Report (OCR Enhanced)</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.5/dist/tesseract.min.js"></script>
+    <style>
+        body {{ font-family: Arial; max-width: 800px; margin: auto; padding: 20px; }}
+        label {{ font-weight: bold; display: block; margin-top: 10px; }}
+        input, textarea {{ width: 100%; padding: 6px; margin-top: 5px; }}
+        .section {{ border-top: 1px solid #ccc; padding-top: 20px; margin-top: 20px; }}
+    </style>
+</head>
+<body>
+    <h1>Technician Repair Report</h1>
+    <div class="section">
+        <label for="model">Model Number</label>
+        <input type="text" id="model" placeholder="Model Number">
+
+        <label for="serial">Serial Number</label>
+        <input type="text" id="serial" placeholder="Serial Number">
+
+        <label for="parts_id">Parts ID Number</label>
+        <input type="text" id="parts_id" placeholder="Parts ID">
+
+        <label for="warranty_id">Warranty ID</label>
+        <input type="text" id="warranty_id" placeholder="Warranty ID">
+
+        <label for="date_manufacture">Date of Manufacture</label>
+        <input type="text" id="date_manufacture" placeholder="Date of Manufacture">
+    </div>
+
+    <div class="section">
+        <label for="plate_image">Upload Image for OCR</label>
+        <input type="file" id="plate_image" accept="image/*">
+        <button onclick="runOCR()">Extract Info from Plate</button>
+        <pre id="ocr_output"></pre>
+    </div>
+
+    <script>
+        function runOCR() {{
+            const image = document.getElementById("plate_image").files[0];
+            if (!image) {{
+                alert("Please upload an image.");
+                return;
+            }}
+            Tesseract.recognize(image, 'eng').then(function(result) {{
+                const text = result.data.text;
+                document.getElementById("ocr_output").textContent = text;
+
+                const modelMatch = text.match(/Model\s*Number[:\-\s]*([A-Z0-9\-]+)/i);
+                const serialMatch = text.match(/Serial\s*Number[:\-\s]*([A-Z0-9]+)/i) || text.match(/S\.?N\.?[:\-\s]*([A-Z0-9]+)/i);
+                const partsIdMatch = text.match(/Parts\s*ID\s*Number[:\-\s]*([A-Z0-9]+)/i);
+                const warrantyMatch = text.match(/Warranty.*?ID.*?[:\-\s]*([A-Z0-9]+)/i);
+                const dateMatch = text.match(/Date\s*(?:of)?\s*Manufacture[:\-\s]*([0-9\/\.\-]+)/i);
+
+                if (modelMatch) document.getElementById("model").value = modelMatch[1];
+                if (serialMatch) document.getElementById("serial").value = serialMatch[1];
+                if (partsIdMatch) document.getElementById("parts_id").value = partsIdMatch[1];
+                if (warrantyMatch) document.getElementById("warranty_id").value = warrantyMatch[1];
+                if (dateMatch) document.getElementById("date_manufacture").value = dateMatch[1];
+            }});
+        }}
+    </script>
+</body>
+</html>
