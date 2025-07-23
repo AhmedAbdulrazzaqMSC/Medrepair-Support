@@ -3,24 +3,47 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Medrepair OCR Clean</title>
+  <title>Technician Report with OCR</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2/dist/tesseract.min.js"></script>
 </head>
 <body>
-  <h2>Technician Report with OCR</h2>
+  <h2>Repair Report</h2>
 
   <form>
-    <label>Info Plate Image:
+    <p><label>Container Number:<br>
+      <input type="text" id="container_number" name="container_number">
+    </label></p>
+
+    <p><label>Model Number (Auto):<br>
+      <input type="text" id="model_input" name="model_input" placeholder="Model Number">
+    </label></p>
+
+    <p><label>Serial Number (Auto):<br>
+      <input type="text" id="serial_input" name="serial_input" placeholder="Serial Number">
+    </label></p>
+
+    <p><label>Date:<br>
+      <input type="date" id="date_input" name="date_input">
+    </label></p>
+
+    <p><label>Technician Name:<br>
+      <input type="text" id="tech_name" name="tech_name">
+    </label></p>
+
+    <p><label>Upload Info Plate Image for OCR:<br>
       <input type="file" id="plate-upload" accept="image/*">
     </label>
-    <button type="button" id="extract-btn">Extract Info</button>
-    <div id="ocr-status"></div>
+    <button type="button" id="extract-btn">Extract Info</button></p>
 
-    <p><input id="model_input" name="model" placeholder="Model Number"></p>
-    <p><input id="serial_input" name="serial" placeholder="Serial Number"></p>
-    <p><input id="date_input" name="manufacture_date" placeholder="MM/YYYY"></p>
-    <p><input id="refrigerant_input" name="refrigerant" placeholder="Refrigerant Type"></p>
-    <p><input id="warranty_input" name="warranty_id" placeholder="Warranty ID"></p>
+    <p><label>Refrigerant Type:<br>
+      <input type="text" id="refrigerant_input" name="refrigerant_input" placeholder="Refrigerant Type">
+    </label></p>
+
+    <p><label>Warranty ID:<br>
+      <input type="text" id="warranty_input" name="warranty_input" placeholder="Warranty ID">
+    </label></p>
+
+    <div id="ocr-status" style="margin-top:10px;"></div>
   </form>
 
   <script>
@@ -49,8 +72,6 @@
           document.getElementById('date_input').value = fields.date;
           document.getElementById('refrigerant_input').value = fields.refrigerant;
           document.getElementById('warranty_input').value = fields.warranty;
-
-          status.innerText = 'Done. Review & submit.';
         })
         .catch(err => {
           console.error(err);
